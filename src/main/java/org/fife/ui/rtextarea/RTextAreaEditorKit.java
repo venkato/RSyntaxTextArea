@@ -1116,6 +1116,20 @@ public class RTextAreaEditorKit extends DefaultEditorKit {
 			lastWordStart = searchOffs = lastDot = -1;
 		}
 
+		private int getWordStart(RTextArea textArea, int offs)
+				throws BadLocationException {
+			RDocument doc = (RDocument)textArea.getDocument();
+			while (offs>=0 && isDumbWordChar(doc.charAt(offs))) {
+				offs--;
+			}
+			return offs + 1;
+		}
+
+		private static final boolean isDumbWordChar(char ch) {
+			return Character.isLetterOrDigit(ch) || ch == '_' ||
+					ch == '$';
+		}
+
 		@Override
 		public void actionPerformedImpl(ActionEvent e, RTextArea textArea) {
 
@@ -1130,17 +1144,14 @@ public class RTextAreaEditorKit extends DefaultEditorKit {
 					return;
 				}
 
-				int curWordStart = Utilities.getWordStart(textArea, dot - 1);
+				int curWordStart = getWordStart(textArea, dot - 1);
 
 				if (lastWordStart!=curWordStart || dot!=lastDot) {
-					lastPrefix = textArea.getText(curWordStart,dot-curWordStart);
-					// Utilities.getWordStart() treats spans of whitespace and
-					// single non-letter chars as "words."
-					if (lastPrefix.length()==0 ||
-							!Character.isLetter(lastPrefix.charAt(lastPrefix.length()-1))) {
+					if (curWordStart == dot) {
 						UIManager.getLookAndFeel().provideErrorFeedback(textArea);
 						return;
 					}
+					lastPrefix = textArea.getText(curWordStart,dot-curWordStart);
 					lastWordStart = dot - lastPrefix.length();
 					searchOffs = lastWordStart;
 				}
